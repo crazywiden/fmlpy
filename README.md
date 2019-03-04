@@ -24,7 +24,7 @@ This package is under developement. Will be provided once we are ready.
 This package is under developement. Will be provided once we are ready.
 
 ## Contribute
-Thanks so much to My King!!
+Salute to My King!!
 
 ![](https://drive.google.com/uc?export=view&id=1XjO7_k6Qo0BwICw8TsAo72vFDqrKKTZh)  
 Also thanks to anyone who can help!! Please see our [Contributing Guidelines](https://github.com/crazywiden/pyfml/blob/master/CONTRIBUTING.md) before contributing.
