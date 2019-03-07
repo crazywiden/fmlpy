@@ -8,6 +8,9 @@ volume_imbalance_bar()
 tick_run_bar()
 volume_run_bar()
 """
+import pandas as pd
+from functools import reduce
+
 def _preprocess(data, need_vol=False):
   """
   this function is used to do the following things:
@@ -40,11 +43,49 @@ def _preprocess(data, need_vol=False):
 
 
 def time_bar(data, time_window):
-    data = preproc(data)
+    '''
+    Calculate HOLC for certain time window
+    @requires:
+        pandas, functools
+    @param:
+        data: input data with time and price
+        time_window: time window size
+    @return:
+        dataframe (start, stop, high, low, close, open)
+    '''
+    data = _preprocess(data)
+    time_window = pd.Timedelta(time_window)
+    merged = data.groupby('time').agg(['min', 'max', 'first', 'last']).reset_index()
+    start = end = pd.to_datetime(data.iloc[0, 'time'])
+    lo = float("inf")
+    hi = 0
+    open = merged.iloc[0]['price']['first']
+    result = pd.DataFrame(columns=['start', 'stop', 'high', 'low', 'close', 'open'])
+    for index, row in merged.iterrows():
+        if lo < row.price['min']:
+            lo = row.price['min']
+        if hi > row.price['max']:
+            hi = row.price['max']
+        cur = pd.to_datetime(row['time'])
+        if cur < start + time_window:
+            end = cur
+        else:
+            result.append(pd.DataFrame([start, end, hi, lo, row.price['last'], open]))
+            start = end
+            open = row.price['first']
+            if cur < start + time_window:
+                end = cur
+            else:
+                result.append(pd.DataFrame([start, end, hi, lo, row.price['last'], open]))
+                start = cur
+    return result
 
-    # return: dataframe (start, stop, HLOC)
-    # time win intergeer
-    # exception?
 
 def volume_bar(data, size):
-    # return dataframe
+    '''
+    Calculate HOLC for a certain volume
+    :param data: input data with time and price
+    :param size: input volume bar
+    :return: dataframe (start, stop, high, low, close, open)
+    '''
+    data = _preprocess(data, True)
