@@ -39,10 +39,10 @@ def _preprocess(data, need_vol=False):
     if not isinstance(data,pd.DataFrame):
         raise TypeError("the input should be DataFrame")
     if not need_vol:
-        data = data.iloc[:,:2]
+        data = data.iloc[:, [1,3]]
         data.columns = ["time","price"]
     else:
-        data = data.iloc[:,:3]
+        data = data.iloc[:, [1,3,2]]
         data.columns = ["time","price","vol"]
     return data
 
@@ -60,30 +60,18 @@ def time_bar(data, time_window):
         dataframe (start, stop, high, low, close, open)
     '''
     data = _preprocess(data)
-    time_window = pd.Timedelta(time_window)
-    merged = data.groupby('time').agg(['min', 'max', 'first', 'last']).reset_index() #there might be something wrong here
-    start = end = pd.to_datetime(data['time'][0])
-    lo = float("inf")
-    hi = 0
-    open = merged.iloc[0]['price']['first']
-    result = pd.DataFrame(columns=['start', 'stop', 'high', 'low', 'close', 'open'])
-    for index, row in merged.iterrows():
-        if lo < row.price['min']:
-            lo = row.price['min']
-        if hi > row.price['max']:
-            hi = row.price['max']
-        cur = pd.to_datetime(row['time'])
-        if cur < start + time_window:
-            end = cur
-        else:
-            result.append(pd.DataFrame([start, end, hi, lo, row.price['last'], open]))
-            start = end
-            open = row.price['first']
-            if cur < start + time_window:
-                end = cur
-            else:
-                result.append(pd.DataFrame([start, end, hi, lo, row.price['last'], open]))
-                start = cur
+    data = data.assign(time= pd.to_datetime(data['time']))
+    data = data.resample(time_window, on='time')
+    aggregated_data = data.agg(['min', 'max', 'first', 'last'])
+    times = aggregated_data['time']
+    times.columns = ['min', 'max', 'start', 'stop']
+    times = times[['start', 'stop']]
+    price = aggregated_data['price']
+    price.columns = ['low', 'high', 'open', 'close']
+    result = pd.concat([times, price], axis=1, sort=False)
+    result = result.reset_index()
+    result = result.drop(['time'], axis=1)
+    result = result.dropna()
     return result
 
 
@@ -95,3 +83,8 @@ def volume_bar(data, size):
     :return: dataframe (start, stop, high, low, close, open)
     '''
     data = _preprocess(data, True)
+
+
+# test
+bar_test = pd.read_csv('../tests/bar_test_data.csv')
+print(time_bar(bar_test, '3s'))
