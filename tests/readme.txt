@@ -4,10 +4,8 @@ bar_test_data.csv
 Columns:
 	
 	    1.) Time: 		
-				Seconds after midnight with decimal 
-				precision of at least milliseconds 
-				and up to nanoseconds depending on 
-				the requested period.
+				Timestamp. 
+				precision: millisecond.
 	    2.) Price: 		
 				Dollar price times 10000 
 				(i.e., A stock price of $91.14 is given 
@@ -25,10 +23,10 @@ raw_data.csv
 	Columns:
 	
 	    1.) Time: 		
-				Seconds after midnight with decimal 
+				Timedelta after midnight with decimal 
 				precision of at least milliseconds 
 				and up to nanoseconds depending on 
-				the requested period
+				the requested period.
 	    2.) Type:
 				1: Submission of a new limit order
 				2: Cancellation (Partial deletion 
