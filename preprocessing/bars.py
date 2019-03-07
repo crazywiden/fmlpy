@@ -9,7 +9,6 @@ tick_run_bar()
 volume_run_bar()
 """
 import pandas as pd
-from functools import reduce
 
 def _preprocess(data, need_vol=False):
     """
@@ -52,7 +51,7 @@ def time_bar(data, time_window):
     '''
     Calculate HOLC for certain time window
     @requires:
-        pandas, functools
+        pandas
     @param:
         data: input data with time and price
         time_window: time window size
