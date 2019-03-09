@@ -80,7 +80,7 @@ def volume_bar(data, size):
     @requires:
         pandas
     @parameters:
-        data: input data with time and price
+        data: input data with time, price and volume
         size: input volume bar, integer
     @return:
         dataframe (start, stop, high, low, close, open)
@@ -100,7 +100,35 @@ def volume_bar(data, size):
     return result
 
 
+def dollar_bar(data, bar):
+    '''
+    Calculate HOLC for a certain dollar
+    @requires:
+        pandas
+    @parameters:
+        data: input data with time, price and volume
+        size: input dollar bar, integer
+    @return:
+        dataframe (start, stop, high, low, close, open)
+    '''
+    data = _preprocess(data, True)
+    if not isinstance(bar, int):
+        raise TypeError("Dollar bar should be an integer")
+    data.loc[:, 'vol'] = pd.to_numeric(data['vol'])
+    data['dollar'] = data['price'] * data['vol']
+    data.loc[:, 'cumsum'] = data['dollar'].cumsum()
+    data['cumsum'] = data['cumsum'] // bar
+    aggregated_data = data.groupby('cumsum').agg({'time': ['first', 'last'], 'price': ['min', 'max', 'first', 'last']})
+    aggregated_data.columns = [' '.join(col).strip() for col in aggregated_data.columns.values]
+    aggregated_data.columns = ['start', 'stop', 'low', 'high', 'open', 'close']
+    result = aggregated_data.reset_index()
+    result = result.drop(['cumsum'], axis=1)
+    result = result.dropna()
+    result.to_csv('result.csv')
+    return result
+
 # test
 bar_test = pd.read_csv('../tests/bar_test_data.csv')
 # print(time_bar(bar_test, '3s'))
 # print(volume_bar(bar_test, 200))
+dollar_bar(bar_test, 200000000)
