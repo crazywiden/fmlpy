@@ -16,6 +16,9 @@ This package included four modules listed below
     __* This module will not be included in version 1.0__
 + __tests__  
     Used to test the correctness of the code during development and provide examples to users after the package is deployed. 
+## Dependecy
++ pandas 0.24.1
+
 
 ## Installation
 This package is under developement. Will be provided once we are ready.
