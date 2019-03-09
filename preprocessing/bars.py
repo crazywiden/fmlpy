@@ -54,7 +54,34 @@ def time_bar(data, time_window):
         pandas
     @param:
         data: input data with time and price
-        time_window: time window size
+        time_window: time window size, acceptable format and meaning are
+            B         business day frequency
+            C         custom business day frequency (experimental)
+            D         calendar day frequency
+            W         weekly frequency
+            M         month end frequency
+            SM        semi-month end frequency (15th and end of month)
+            BM        business month end frequency
+            CBM       custom business month end frequency
+            MS        month start frequency
+            SMS       semi-month start frequency (1st and 15th)
+            BMS       business month start frequency
+            CBMS      custom business month start frequency
+            Q         quarter end frequency
+            BQ        business quarter endfrequency
+            QS        quarter start frequency
+            BQS       business quarter start frequency
+            A         year end frequency
+            BA, BY    business year end frequency
+            AS, YS    year start frequency
+            BAS, BYS  business year start frequency
+            BH        business hour frequency
+            H         hourly frequency
+            T, min    minutely frequency
+            S         secondly frequency
+            L, ms     milliseonds
+            U         microseconds
+            N, us     nanoseconds
     @return:
         dataframe (start, stop, high, low, close, open)
     '''
@@ -124,11 +151,10 @@ def dollar_bar(data, bar):
     result = aggregated_data.reset_index()
     result = result.drop(['cumsum'], axis=1)
     result = result.dropna()
-    result.to_csv('result.csv')
     return result
 
 # test
 bar_test = pd.read_csv('../tests/bar_test_data.csv')
-# print(time_bar(bar_test, '3s'))
-# print(volume_bar(bar_test, 200))
-dollar_bar(bar_test, 200000000)
+print(time_bar(bar_test, '3 s'))
+print(volume_bar(bar_test, 200))
+print(dollar_bar(bar_test, 200000000))
