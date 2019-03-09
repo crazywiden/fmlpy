@@ -42,7 +42,7 @@ def _preprocess(data, need_vol=False):
         data.columns = ["time","price"]
     else:
         data = data.iloc[:, [1,3,2]]
-        data.columns = ["time","price","vol"]
+        data.columns = ["time","vol","price"]
     return data
 
 
@@ -77,13 +77,30 @@ def time_bar(data, time_window):
 def volume_bar(data, size):
     '''
     Calculate HOLC for a certain volume
-    :param data: input data with time and price
-    :param size: input volume bar
-    :return: dataframe (start, stop, high, low, close, open)
+    @requires:
+        pandas
+    @parameters:
+        data: input data with time and price
+        size: input volume bar, integer
+    @return:
+        dataframe (start, stop, high, low, close, open)
     '''
     data = _preprocess(data, True)
+    if not isinstance(size, int):
+        raise TypeError("Size should be an integer")
+    data.loc[:, 'vol'] = pd.to_numeric(data['vol'])
+    data.loc[:, 'cumsum'] = data['vol'].cumsum()
+    data['cumsum'] = data['cumsum'] // size
+    aggregated_data = data.groupby('cumsum').agg({'time': ['first', 'last'], 'price': ['min', 'max', 'first', 'last']})
+    aggregated_data.columns = [' '.join(col).strip() for col in aggregated_data.columns.values]
+    aggregated_data.columns = ['start', 'stop', 'low', 'high', 'open', 'close']
+    result = aggregated_data.reset_index()
+    result = result.drop(['cumsum'], axis=1)
+    result = result.dropna()
+    return result
 
 
 # test
 bar_test = pd.read_csv('../tests/bar_test_data.csv')
-print(time_bar(bar_test, '3s'))
+# print(time_bar(bar_test, '3s'))
+# print(volume_bar(bar_test, 200))
