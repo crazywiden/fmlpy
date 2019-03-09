@@ -38,11 +38,11 @@ def _preprocess(data, need_vol=False):
     if not isinstance(data,pd.DataFrame):
         raise TypeError("the input should be DataFrame")
     if not need_vol:
-        data = data.iloc[:, [1,3]]
+        data = data.iloc[:, :2]
         data.columns = ["time","price"]
     else:
-        data = data.iloc[:, [1,3,2]]
-        data.columns = ["time","vol","price"]
+        data = data.iloc[:, :3]
+        data.columns = ["time","price","vol"]
     return data
 
 
