@@ -67,12 +67,17 @@ def _EMA(vec, win):
         ema_series[i] = (1-alpha)*ema_series[i-1] + alpha*vec[i]
     return ema_series
 
-def _direction(price,mode="tick"):
+def _direction(price,vol=None,mode="tick"):
     """
     this function generate sequence b_t(in the book Chapter 2 section 3.2.1)
     formula: b_t = b_t - 1 is delta(p_t) == 0 else delta(p_t)/|delta(p_t)|
     @parameter:
         price--n by 1 array
+        vol -- n by 1 array
+            has same length with price,default is None
+            needed if mode == "volume"
+        mode -- string
+            must be in ["tick","volume"]
     @returns:
         b_t -- n by 1 array
         each element is either 1 or -1 or 0
