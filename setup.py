@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='pyfml',
-    version='0.1dev',
+    name='fmlpy',
+    version='0.10dev',
     packages=find_packages(exclude=['tests*']),
     license='MIT',
     description='package for Financial Machine Learning',
