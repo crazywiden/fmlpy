@@ -2,7 +2,7 @@
 this script is used to calculate fractionally differentiated 
 and provide option to test the stationary of a series
 """
-def frac_diff(n, k, x):
+def frac_diff(n, x):
     '''
     This function is used to calculate fraction differenciation
     :param n: total number to iterate
@@ -10,16 +10,15 @@ def frac_diff(n, k, x):
     :param x: kind of some number
     :return: some calculated result
     '''
-    comb_list = _combine(n, k)
+    comb_list = _combine(n)
     answer = [a*b for a,b in zip(x,comb_list)]
     return answer
 
 
-def _combine(n, k):
+def _combine(n):
     '''
     calculate combination number
     :param n:
-    :param k:
     :return: a list of combination number
     '''
     result = [None]*n
