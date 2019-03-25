@@ -39,7 +39,3 @@ def _one_frac(x, base):
     comb_list = _combine(base)
     answer = [a * b for a, b in zip(x[::-1], comb_list)]
     return np.sum(answer)
-
-
-res = frac_diff(2, [1,2,3,4,5,6,7,8,9,10])
-print(res)
