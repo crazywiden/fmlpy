@@ -24,7 +24,7 @@ def parser_args():
         help="for VIB/TIB/VRB/TRB")
     parser.add_argument("--bt1_window", type=int, default=100,\
         help="for VRB/TRB")
-    parer.add_argument("--pos_vol_window",type=int,default=100,\
+    parser.add_argument("--pos_vol_window",type=int,default=100,\
         help="for VRB")
     parser.add_argument("--neg_vol_window",type=int,default=100,\
         help="for VRB")
@@ -157,7 +157,7 @@ def main(root_path):
         print("################################")
     else:
         print("#####################")
-        print("#oops! bugs detected#")
+        print("#Oops! bugs detected#")
         print("#####################")
 
 if __name__ == '__main__':

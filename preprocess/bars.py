@@ -10,7 +10,31 @@ volume_run_bar()
 """
 import pandas as pd
 import numpy as np
-# from .. import fin_utils
+import itertools
+
+def _bar2df(bars,data):
+    """
+    get subset of data according to the location provided by bar_loc
+    @parameters:
+    data -- dataframe
+        first column should be time second column should be price
+    bars -- np.array
+        each element in bars represent the length of that bar
+    @returns:
+    res -- dataframe
+        dataframe (start, stop, high, low, close, open)
+    """
+    tmp = list(map(lambda x: [x[0] for _ in range(x[1])],list(enumerate(bars))))
+    labels = list(itertools.chain(*tmp))
+    data["labels"] = labels
+    aggregation_condition = {'time': ['first', 'last'], \
+                             'price': ['min', 'max', 'first', 'last']}
+    res = data.groupby("labels",as_index=False).agg(aggregation_condition)
+    res.columns = ['_'.join(col) for col in res.columns.values]
+    res = res.drop(["labels_"],axis=1)
+    res.columns = ['start', 'stop', 'low', 'high', 'open', 'close']
+    return res
+
 
 def _preprocess(data, need_vol=False):
     """
@@ -60,11 +84,13 @@ def _EMA(vec, win):
     """
 
     assert win>0 and win<len(vec), "the size of EMA window is not allowed"
-    ema_series = vec.copy()
-    N = len(ema_series)
-    alpha = 2/(1+N)
-    for i in range(win,N):
-        ema_series[i] = (1-alpha)*ema_series[i-1] + alpha*vec[i]
+    N = len(vec)
+    ema_series = [0 for _ in range(N)]
+    ema_series[0] = vec[0]
+    alpha = 2/(1+win)
+    for i in range(1,N):
+        ema_series[i] = alpha*vec[i] + (1-alpha)*ema_series[i-1]
+
     return ema_series
 
 def _direction(price,vol=None,mode="tick"):
@@ -98,7 +124,7 @@ def _direction(price,vol=None,mode="tick"):
         b_t[i] = b_t[i-1]
     return b_t
 
-def _estimate_P(b_t, loc, window_size):
+def _estimate_P(b_t, bar, window_size):
     """
     this function is used to calculate 2P(b_t=1)-1 as EMV of previous bt
     @parameters:
@@ -111,9 +137,10 @@ def _estimate_P(b_t, loc, window_size):
     @returs:
         P -- scalar
     """
+    loc = sum(bar)
     window_size = min(loc-1, window_size)
     ema_series = _EMA(b_t[:loc], window_size)
-    return ema_series[loc-1]
+    return ema_series[-1]
 
 def _estimate_ET(bar, window_size):
     """
@@ -130,16 +157,14 @@ def _estimate_ET(bar, window_size):
     """
     N = len(bar)
     if N == 1:
-        return bar
+        return bar[0]
     elif N == 2:
         return np.mean(bar)
     elif N == 0:
         return 0
     window_size = min(N-1, window_size)
-    # bar_ema = fin_utils.EMA(bar,window_size)
-    bar_df = pd.DataFrame({'bar':bar})
-    bar_ema = bar_df.ewm(span=window_size).mean()
-    return bar_ema.values[-1]
+    bar_ema = _EMA(bar, window_size)
+    return bar_ema[-1]
 
 def time_bar(data, time_window):
     '''
@@ -226,7 +251,7 @@ def dollar_bar(data, bar):
         pandas
     @parameters:
         data: input data with time, price and volume
-        size: input dollar bar, integer
+        bar: input dollar bar, integer
     @return:
         dataframe (start, stop, high, low, close, open)
     '''
@@ -245,10 +270,9 @@ def dollar_bar(data, bar):
     result = result.dropna()
     return result
 
-
 def imbalance_bar(data,ET_window,P_window, warm_up_len = 100,mode="TIB"):
     """
-    this function is used to calculate the tick imbalance bar
+    calculate the tick imbalance bar
     @parameters:
         data--dataframe
             first column should be time second column should be price
@@ -272,37 +296,179 @@ def imbalance_bar(data,ET_window,P_window, warm_up_len = 100,mode="TIB"):
 
     N = data.shape[0]
     b_t = _direction(data["price"])
+
     if mode == "VIB":
-        b_t = b_t * data["volume"]
+        b_t = np.array(b_t * data["vol"])
     t0 = max(np.nonzero(b_t)[0][0], warm_up_len)
     bar = [t0]
     bar_len = 0
     E_T = _estimate_ET(bar, ET_window) # E_T warm up
-    E_theta = E_T[0] * _EMA(b_t[:t0],win=min(t0-1,P_window))[0]
+    E_theta = E_T[0] * _EMA(b_t[:t0],win=min(t0-1,P_window))[-1]
     while True:
-        current_loc = sum(bar)
-        theta_t = abs(np.cumsum(b_t[:-current_loc]))
+        theta_t = abs(np.cumsum(b_t[sum(bar):]))
         increment = np.where(theta_t > E_theta)[0]# np.where() will return a tuple
         if len(increment)==0: # if can't find any appropriate bar
+            bar.append(data.shape[0] - sum(bar))
             break  
         if bar[bar_len] + increment[0] >= N:
+            bar.append(data.shape[0] - sum(bar))
             break
-
-        bar.append(bar[-1] + increment[0])
+        bar.append(increment[0]+1)# python start from 0 but we want to store the length of each bar
         bar_len += 1
         E_T = _estimate_ET(bar, ET_window)
-        E_theta = E_T * _estimate_P(b_t, current_loc, P_window)
+        E_theta = E_T * abs(_estimate_P(b_t, bar, P_window))
+    result = _bar2df(bar,data)
+    return result
 
-    return np.array(bar)
+def tick_run_bar(data, ET_window, bt1_window, warm_up_len=100):
+    """
+    calculate the tick run bar
+    note that this function has different output with fmlr::bar_tick_imbalance()
+    reason is these two function adopted different method to calculate EMA
+    don't know which method is correct yet
+    @parameters:
+        data--dataframe
+            first column should be time second column should be price
+        ET_window--scalar
+            EMV window size to estimate E[T]
+        bt1_window--scalar
+            EMV window size to estimate proportion of b_t==1 in each bar
+        warm_up_len -- scalar
+            how many data should we use to warm up
+            default is 100
+    @returns:
+        dataframe (start, stop, high, low, close, open)
+    """
+    data = _preprocess(data)
+    b_t = _direction(data["price"])
+    N = data.shape[0]
 
+    # initialize E_T, P(b_t=1)
+    t0 = max(warm_up_len, np.nonzero(b_t)[0][0])
+    bar = []
+    bar_len = 0
+    P_bt1 = np.count_nonzero(b_t[:t0]==1)/t0
+    P_bt1_vec = [P_bt1]
+    E_T = t0
+    E_theta = E_T * max(P_bt1, 1-P_bt1)
+    
+    pos_cnt = 0
+    neg_cnt = 0
+    increment = 0
+    # start updating
+    for i in range(N):
+        if b_t[i] == 1:
+            pos_cnt += 1
+        elif b_t[i] == -1:
+            neg_cnt += 1
+        increment += 1
+
+        if max(pos_cnt,neg_cnt) >= E_theta: # max(pos_cnt,neg_cnt) is theta_t
+            bar.append(increment) # in this scenario we sample a bar
+            bar_len += 1
+
+            P_bt1_vec.append(pos_cnt/increment)
+            pos_cnt, neg_cnt = 0, 0 # reset \sum_{bt==1} to 0
+            increment = 0
+            # recalculate E_theta
+            E_T = _estimate_ET(bar, ET_window)
+            P_bt1 = _estimate_ET(P_bt1_vec, bt1_window)
+            E_theta = E_T * max(P_bt1, 1 - P_bt1)
+    bar.append(data.shape[0] - sum(bar))
+    result = _bar2df(bar,data)
+    return result
+
+def vol_run_bar(data,ET_window,bt1_window,pos_vol_window,neg_vol_window,warm_up_len=100):
+    """
+    calculate the tick run bar
+    note that this function has different output with fmlr::bar_volume_imbalance()
+    reason is these two function adopted different method to calculate EMA
+    don't know which method is correct yet
+    @parameters:
+        data--dataframe
+            first column should be time second column should be price
+        ET_window--scalar
+            EMV window size to estimate E[T]
+        bt1_window--scalar
+            EMV window size to estimate proportion of b_t==1 in each bar
+        pos_vol_window--scalar
+            EMV window size to estimate E(v_t|b_t==1) 
+        neg_vol_window--scalar
+            EMV window size to estimate E(v_t|b_t==-1)
+        warm_up_len -- scalar
+            how many data should we use to warm up
+            default is 100
+    @returns:
+        dataframe (start, stop, high, low, close, open)
+    """
+    data = _preprocess(data, need_vol=True)
+    b_t = _direction(data["price"])
+    vol = data["vol"]
+    N = data.shape[0]
+
+
+    # initialize E_T, P(b_t=1), E[v_t|b_t==1], E[v_t|b_t==-1]
+    t0 = max(warm_up_len, np.nonzero(b_t)[0][0])
+    E_T = t0
+
+    P_bt1 = np.count_nonzero(b_t[:t0]==1)/t0
+    P_bt1_vec = [P_bt1]
+
+    pos_loc = np.where(b_t[:t0]==1)[0]
+    if len(pos_loc) == 0:
+        pos_vol_vec = [0]
+    else:
+        pos_vol_vec = [np.mean(vol[pos_loc].values)]
+
+    neg_loc = np.where(b_t[:t0]==1)[0]
+    if len(neg_loc) == 0:
+        neg_vol_vec = [0]
+    else:
+        neg_vol_vec = [np.mean(vol[neg_loc].values)]
+    E_theta = E_T * max(pos_vol_vec[-1]*P_bt1, neg_vol_vec[-1]*(1-P_bt1))
+    
+    bar = []
+    bar_len = 0
+    pos_vol,neg_vol = 0, 0
+    pos_cnt,neg_cnt = 0, 0
+    increment = 0
+    # start updating
+    for i in range(N):
+        if b_t[i] == 1:
+            pos_vol += vol[i]
+            pos_cnt += 1
+        elif b_t[i] == -1:
+            neg_vol += vol[i]
+            neg_cnt += 1
+        increment += 1
+
+        if max(pos_vol,neg_vol) >= E_theta: # max(pos_cnt,neg_cnt) is theta_t
+            bar.append(increment) # in this scenario we sample a bar
+            bar_len += 1
+
+            P_bt1_vec.append(pos_cnt/increment)
+            pos_vol_vec.append(pos_vol/increment)
+            neg_vol_vec.append(neg_vol/increment)
+
+            pos_cnt, neg_cnt = 0, 0 # reset \sum_{b_t==1} b_t to 0
+            pos_vol, neg_vol = 0, 0 # reset \sum_{b_t==1} v_t to 0
+            increment = 0
+            # recalculate E_theta
+            E_T = _estimate_ET(bar, ET_window)
+            P_bt1 = _estimate_ET(P_bt1_vec, bt1_window)
+            E_v_bt_pos = _estimate_ET(pos_vol_vec,pos_vol_window)
+            E_v_bt_neg = _estimate_ET(neg_vol_vec,neg_vol_window)
+            E_theta = E_T * max(E_v_bt_pos*P_bt1, E_v_bt_neg * (1 - P_bt1))
+    bar.append(data.shape[0] - sum(bar))
+    result = _bar2df(bar,data)
+    return result
 
 
 # test
 if __name__ == '__main__':
-    bar_test = pd.read_csv('../tests/bar_test_data.csv')
-    bar_test = bar_test.iloc[:,1:]
-    # print(bar_test.head())
-    bar_loc = imbalance_bar(bar_test,ET_window=100,P_window=100, warm_up_len = 100,mode="TIB")
-    # from timeit import Timer 
-    # t = Timer(lambda: _direction(price))
+    bar_test = pd.read_csv(r"../tests/bar_test_data.csv")
+    # a = tick_run_bar(bar_test,ET_window=400,bt1_window=400,warm_up_len=100)
+    a = vol_run_bar(bar_test,ET_window=400,bt1_window=400, \
+        pos_vol_window=100,neg_vol_window=100,warm_up_len=100)
+    print(a.head())
     
