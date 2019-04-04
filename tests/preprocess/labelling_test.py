@@ -31,10 +31,10 @@ def parser_args():
 def main(root_path):
     # read data
     test_data = pd.read_csv(os.path.join(root_path,"bar_test_data.csv"))
-    price = test_data["Price"]
+    price = test_data["Price"].values
 
     # prepare for parameters
-    args = parse_args()
+    args = parser_args()
     thres = args.target
     profit_take = args.pt
     stop_loss = args.sl
@@ -44,10 +44,10 @@ def main(root_path):
 
     CUMSUM_idx = filters.CUMSUM_filter(price, thres)
     N = len(CUMSUM_idx)
-    events = pd.dataframe({"start_t":CUMSUM_idx + 1, "end_t": CUMSUM_idx + hold_time,\
+    events = pd.DataFrame({"start_t":CUMSUM_idx + 1, "end_t": CUMSUM_idx + hold_time,\
         "target_rtn":np.repeat(target,N), "side": np.repeat(0,N)})
     meta_label = labelling.meta_label(price, events, profit_take, stop_loss, is_vertical)
-
+    
     Rmd = "Rscript gen_labelling.R --pt %f --sl %f --thres %d --target %f --hold %d --is_vertical %s"\
      % (profit_take, stop_loss, thres, target, hold_time, is_vertical)
     subprocess.check_output(Rmd, universal_newlines=True)
