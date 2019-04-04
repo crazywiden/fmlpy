@@ -2,7 +2,8 @@ import sys
 import os
 from os.path import dirname
 sys.path.append(dirname(dirname(dirname(os.getcwd()))))
-from fmlpy.preprocess import frac_diff
+from fmlpy.preprocess import filters
+from fmlpy.preprocess import labelling
 import subprocess
 import argparse
 import pandas as pd
@@ -11,45 +12,57 @@ import numpy as np
 def parser_args():
     descrip = "fractional differentiation check"
     parser = argparse.ArgumentParser(description=descrip)
-    parser.add_argument("--d", type=float, default=0.5, \
-        help="fraction difference order")
-    parser.add_argument("--N", type=int, default=20, \
-        help="number of weights")
-    parser.add_argument("--thres", type=float, default=0.0001, \
-        help="when to stop for smallest weights")
+    parser.add_argument("--pt", type=float, default=1,\
+        help="profit taking")
+    parser.add_argument("--sl", type=float, default=1,\
+        help="stop loss")
+    parser.add_argument("--thres", type=int, default=200, \
+        help="threhold for CUMSUM filter")
+    parser.add_argument("--target", type=float, default=0.001, \
+        help="minimum return of each label(we assume symmetric)")
+    parser.add_argument("--hold", type=int, default=200,\
+        help="maximum holding time")
+    parser.add_argument("--is_vertical", default="T",\
+        choices=["TRUE", "FALSE","True","False","T","F"],\
+        help="whether consider vertical bar or not")
     return parser.parse_args()
 
 
 def main(root_path):
-    # args = parse_args()
+    # read data
     test_data = pd.read_csv(os.path.join(root_path,"bar_test_data.csv"))
     price = test_data["Price"]
-    diff_run_N = frac_diff.frac_diff(price, n_weight=args.N)
-    Rmd_N = "Rscript gen_frac_diff.R --d %f --N %d" % (args.d, args.N)
-    subprocess.check_output(Rmd_N, universal_newlines=True)
-    vec_N = pd.read_csv(os.path.join(root_path,"frac_diff_N.csv"))
-    res_N = np.array_equal(diff_run_N,vec_N)
 
-    diff_run_thres = frac_diff.frac_diff(price, thres=args.thres)
-    Rmd_thres = "Rscript gen_frac_diff.R --d %f --thres %f" % (args.d, args.thres)
-    subprocess.check_output(Rmd_thres, universal_newlines=True)
-    vec_thres = pd.read_csv(os.path.join(root_path,"frac_diff_thres.csv"))
-    res_thres = np.array_equal(diff_run_thres,vec_thres)
+    # prepare for parameters
+    args = parse_args()
+    thres = args.target
+    profit_take = args.pt
+    stop_loss = args.sl
+    target = args.target
+    hold_time = args.hold
+    is_vertical = args.is_vertical
 
-    if not res_N:
-        print("##########################################################")
-        print("#Something wrong in the calculation of number of weights!#")
-        print("##########################################################")
+    CUMSUM_idx = filters.CUMSUM_filter(price, thres)
+    N = len(CUMSUM_idx)
+    events = pd.dataframe({"start_t":CUMSUM_idx + 1, "end_t": CUMSUM_idx + hold_time,\
+        "target_rtn":np.repeat(target,N), "side": np.repeat(0,N)})
+    meta_label = labelling.meta_label(price, events, profit_take, stop_loss, is_vertical)
 
-    if not res_thres:
-        print("#######################################################")
-        print("#Something wrong in the calculation of threshold of w!#")
-        print("#######################################################")
-
-    if res_N and res_thres:
+    Rmd = "Rscript gen_labelling.R --pt %f --sl %f --thres %d --target %f --hold %d --is_vertical %s"\
+     % (profit_take, stop_loss, thres, target, hold_time, is_vertical)
+    subprocess.check_output(Rmd, universal_newlines=True)
+    meta_label_run = pd.read_csv(os.path.join(root_path,"meta_label_run.csv"))
+    meta_label_run = meta_label_run[["t0Fea","t1Fea","tLabel","ret","label"]]
+    res = meta_label_run.equals(meta_label)
+    
+    if res:
         print("################################")
         print("#Awesome! your code is perfect!#")
         print("################################")
+    else:
+        print("#####################")
+        print("#Oops! bugs detected#")
+        print("#####################")
     
 if __name__ == '__main__':
     root_path = os.getcwd()
