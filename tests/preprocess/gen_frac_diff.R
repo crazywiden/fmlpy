@@ -1,9 +1,7 @@
-library(lubridate)
 library(fmlr)
 library(optparse)
 library(anytime)
 rm(list=ls())
-options(digits.secs=3)
 
 option_list = list(
   make_option(c("--d"), type="double",default=0.5,

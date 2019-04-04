@@ -21,7 +21,7 @@ def parser_args():
 
 
 def main(root_path):
-    # args = parse_args()
+    args = parser_args()
     test_data = pd.read_csv(os.path.join(root_path,"bar_test_data.csv"))
     price = test_data["Price"]
 
@@ -29,8 +29,8 @@ def main(root_path):
     diff_run_N = frac_diff.frac_diff(price, n_weight=args.N)
     diff_run_thres = frac_diff.frac_diff(price, thres=args.thres)
 
-    Rmd_N = "Rscript gen_frac_diff.R --d %f --N %d --thres %f" % (args.d, args.N, args.thres)
-    subprocess.check_output(Rmd_N, universal_newlines=True)
+    Rmd = "Rscript gen_frac_diff.R --d %f --N %d --thres %f" % (args.d, args.N, args.thres)
+    subprocess.check_output(Rmd, universal_newlines=True)
 
     vec_N = pd.read_csv(os.path.join(root_path,"frac_diff_N.csv"))
     vec_N = vec_N["x"].values # transform dataframe to np.ndarray
