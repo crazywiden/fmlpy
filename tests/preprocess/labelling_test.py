@@ -3,7 +3,7 @@ import os
 from os.path import dirname
 sys.path.append(dirname(dirname(dirname(os.getcwd()))))
 from fmlpy.preprocess import filters
-from fmlpy.preprocess import labelling
+from fmlpy.preprocess import feature_mat
 import subprocess
 import argparse
 import pandas as pd
@@ -46,7 +46,7 @@ def main(root_path):
     N = len(CUMSUM_idx)
     events = pd.DataFrame({"start_t":CUMSUM_idx + 1, "end_t": CUMSUM_idx + hold_time,\
         "target_rtn":np.repeat(target,N), "side": np.repeat(0,N)})
-    meta_label = labelling.meta_label(price, events, profit_take, stop_loss, is_vertical)
+    meta_label = feature_mat.meta_label(price, events, profit_take, stop_loss, is_vertical)
     
     Rmd = "Rscript gen_labelling.R --pt %f --sl %f --thres %d --target %f --hold %d --is_vertical %s"\
      % (profit_take, stop_loss, thres, target, hold_time, is_vertical)
