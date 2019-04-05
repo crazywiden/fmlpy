@@ -4,7 +4,7 @@ library(fmlr)
 
 
 opt_list = list(
-  make_option(c("--thres"), type="double", default = 3000,
+  make_option(c("--thres"), type="double", default = 200,
               help="threshold of CUMSUM filter", metavar = "character")
 )
 
@@ -17,5 +17,4 @@ price <- raw_data$Price
 
 thres = opt$thres
 CUMSUM_filter <- fmlr::istar_CUSUM(price, thres)
-# print(CUMSUM_filter)
 write.csv(CUMSUM_filter,file=paste(root_path,"CUMSUM_idx_run.csv",sep = "/"))
