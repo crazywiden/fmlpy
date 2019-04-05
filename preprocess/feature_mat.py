@@ -8,7 +8,7 @@ def _check_event_format(events):
         return False
     return True
 
-def _get_label(price_seg, barrier, side, is_vertical):
+def _get_label(price_seg, barrier, side, inclu_vertical):
     """
     get label, return, label point of each price segment
     @parameters:
@@ -21,9 +21,9 @@ def _get_label(price_seg, barrier, side, is_vertical):
         side == 0 means take both upper barrier and lower barrier
         side == 1 means take only upper barrier
         side == -1 means take only lower barrier
-    is_vertical -- binary
-        is_vertical == True means label actual sign of return when hit vertical bar
-        is_vertical == False means label 0 when hit vertical bar
+    inclu_vertical -- binary
+        inclu_vertical == True means include the labels when hit verticle barrier
+        inclu_vertical == False means exclude the labels when hit verticle barrier
     @returns:
     rtn -- double
         return of this bar
@@ -37,15 +37,15 @@ def _get_label(price_seg, barrier, side, is_vertical):
     rtn_vec = price_seg/price_seg[0] - 1 # note that rtn_vec[0] == 0
     upper_hit = np.argmax(rtn_vec>=barrier[0])
     lower_hit = np.argmax(rtn_vec<=barrier[1])
+
+    # initially, assign -2 to label to indicate price hit vertical barrier
+    # if inclu_vertical == True, we turn label==-2 to label==0
+    # in other case, bar with label == -2 will be excluded
     if side == 0: # consider both upper barrier and lower barrier
         if upper_hit == 0 and lower_hit == 0: # doesn't hit upper barrier nor lower barrier
-            if is_vertical:
-                rtn = rtn_vec[-1]
-                label = np.sign(rtn)
-                label_point = len(price_seg)
-            else:
-                rtn,label = 0, 0
-                label_point = len(price_seg)
+            rtn = rtn_vec[-1]
+            label = -2 
+            label_point = len(price_seg)
         elif (upper_hit < lower_hit and upper_hit!=0) or lower_hit == 0: # hit upper barrier before lower barrier
             rtn = rtn_vec[upper_hit]
             label = np.sign(rtn)
@@ -56,36 +56,42 @@ def _get_label(price_seg, barrier, side, is_vertical):
             label_point = lower_hit
         
     elif side == 1: # only consider upper barrier
-        if upper_hit == 0: # doesn't hit upper barrier
-            if is_vertical:
-                rtn = rtn_vec[-1]
-                label = np.sign(rtn)
-                label_point = len(price_seg)
-            else:
-                rtn,label = 0, 0
-                label_point = len(price_seg)
+        if upper_hit == 0 and lower_hit == 0: # hit vertical barrier
+            rtn = rtn_vec[-1]
+            label = -2
+            label_point = len(price_seg)
+        elif upper_hit == 0: # hit lower barrier but not hit vertical barrier
+            rtn = rtn_vec[-1]
+            label = 0
+            label_point = len(price_seg)
         else: # hit upper barrier
             rtn = rtn_vec[upper_hit]
             label = np.sign(rtn)
             label_point = upper_hit
 
     elif side == -1: # only consider lower barrier
-        if lower_hit == 0: # doesn't hit lower barrier
-            if is_vertical:
-                rtn = rtn_vec[-1]
-                label = np.sign(rtn)
-                label_point = len(price_seg)
-            else:
-                rtn = rtn_vec[lower_hit]
-                label = np.sign(rtn)
-                label_point = lower_hit 
+        if lower_hit == 0 and upper_hit==0: # hit vertical barrier
+            rtn = rtn_vec[-1]
+            label = -2
+            label_point = len(price_seg)
+        elif lower_hit == 0: # hit upper barrier but not hit vertical barrier
+            rtn = rtn_vec[-1]
+            label = 0
+            label_point = len(price_seg)
+        else:
+            rtn = rtn_vec[lower_hit]
+            label = np.sign(rtn)
+            label_point = lower_hit 
+
+    if inclu_vertical and label == -2:
+        label = 0
 
     return rtn, label, label_point
 
 
 
 
-def meta_label(price, events, profit_take, stop_loss, is_vertical=True):
+def meta_label(price, events, profit_take, stop_loss, inclu_vertical=False):
     """
     use tripple barrier method to label data 
     @parameters:
@@ -101,9 +107,9 @@ def meta_label(price, events, profit_take, stop_loss, is_vertical=True):
         multiplier of target_rtn
     stop_loss: double
         multiplier of target_rtn
-    is_vertical: binary, default is True
-        is_vertical == True means label actual sign of return when hit vertical bar
-        is_vertical == False means label 0 when hit vertical bar
+    inclu_vertical: binary, default is False
+        inclu_vertical == True means include the labels when hit verticle barrier
+        inclu_vertical == False means exclude the labels when hit verticle barrier
     @returns:
     labelled -- dataframe
         feature_start: start point of feature bar
@@ -116,23 +122,33 @@ def meta_label(price, events, profit_take, stop_loss, is_vertical=True):
         raise ValueError("events should be a dataframe with columns: start_t/end_t/target_rtn/side")
 
     N_bar = events.shape[0]
-    feature_start = events["start_t"].values
-    feature_end = events["end_t"].values
+    label_start = events["start_t"].values
+    label_end = np.minimum(events["end_t"].values, len(price)-1)
     target_rtn = events["target_rtn"].values
     side = events["side"].values
-    label_point = np.zeros(N_bar)
-    label = np.zeros(N_bar)
+    label_point = np.zeros(N_bar,dtype=int)
+    label = np.zeros(N_bar,dtype=int)
     rtn = np.zeros(N_bar)
-
     for i in range(N_bar):
         barrier = [profit_take*target_rtn[i], -stop_loss*target_rtn[i]]
-        rtn[i], label[i], tmp_point = _get_label(price[feature_start[i]:feature_end[i]],\
-                                                 barrier, side[i], is_vertical)
-        label_point[i] = i + tmp_point
+        rtn[i], label[i], tmp_point = _get_label(price[label_start[i]:(label_end[i]+1)],\
+                                                 barrier, side[i], inclu_vertical)
+        label_point[i] = label_start[i] + tmp_point
+
+    # previous time point of label_start is end of previous feature bar
+    feature_start = np.insert(label_start[:-1]-1,0, 0)
+    feature_end = label_start-1
 
     labelled = pd.DataFrame({"feature_start":feature_start, "feature_end":feature_end,\
         "label_point":label_point, "label":label,"return":rtn})
-
+    # if we don't need bars that hitted vertical barrier
+    # we will remove bars with label==-2
+    # else we turn bars with label==-2 to 0
+    if not inclu_vertical: 
+        labelled = labelled.drop(labelled[labelled["label"]==-2].index)
+        labelled = labelled.reset_index()
+    else:
+        labelled[labelled["label"]==-2] = 0
     return labelled
 
 def add_features(feature_mat, features, feature_name=None):
