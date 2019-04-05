@@ -1,3 +1,3 @@
-from seq_boostrap import *
-from cross_val import *
-from random_forest import *
+from fmlpy.model.seq_boostrap import *
+from fmlpy.model.cross_val import *
+from fmlpy.model.random_forest import *
