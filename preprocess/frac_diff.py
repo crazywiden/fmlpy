@@ -1,9 +1,13 @@
 """
 this script is used to calculate fractionally differentiated 
-and provide option to test the stationary of a series
 """
 import pandas as pd
 import numpy as np
+
+def frac_diff(price, d, n_weight, thres):
+    
+    pass
+
 
 def frac_diff(n, x):
     '''
@@ -39,3 +43,9 @@ def _one_frac(x, base):
     comb_list = _combine(base)
     answer = [a * b for a, b in zip(x[::-1], comb_list)]
     return np.sum(answer)
+
+if __name__ == '__main__':
+    bar_test = pd.read_csv(r"../tests/bar_test_data.csv")
+    price = bar_test["Price"]
+    a = frac_diff(price,20)
+    print(len(price),len(a))
