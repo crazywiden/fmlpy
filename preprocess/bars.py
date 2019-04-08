@@ -83,14 +83,19 @@ def _EMA(vec, win):
             the first win element is the same as vec
     """
 
-    assert win>0 and win<len(vec), "the size of EMA window is not allowed"
-    N = len(vec)
+    # assert win>0 and win<len(vec), "the size of EMA window is not allowed"
+    N_vec = len(vec)
+    alpha = 2/(1+win)
+    if N_vec == 1:
+        k = 1
+    else: # why we need this??
+        err = 0.000001
+        k = np.ceil(np.log(err) / np.log(1-alpha))
+    N = int(min(N_vec, k))
     ema_series = [0 for _ in range(N)]
     ema_series[0] = vec[0]
-    alpha = 2/(1+win)
     for i in range(1,N):
         ema_series[i] = alpha*vec[i] + (1-alpha)*ema_series[i-1]
-
     return ema_series
 
 def _direction(price,vol=None,mode="tick"):
@@ -156,12 +161,6 @@ def _estimate_ET(bar, window_size):
         E_T--scalar
     """
     N = len(bar)
-    if N == 1:
-        return bar[0]
-    elif N == 2:
-        return np.mean(bar)
-    elif N == 0:
-        return 0
     window_size = min(N-1, window_size)
     bar_ema = _EMA(bar, window_size)
     return bar_ema[-1]
@@ -286,7 +285,7 @@ def imbalance_bar(data,ET_window,P_window, warm_up_len = 100,mode="TIB"):
         mode -- string
             can only be "TIB"(tick imbalance bar) or "VIB"(volume imbalance bar)
     @returns:
-        dataframe (start, stop, high, low, close, open)
+        dataframe (start, stop, high, low, close, open)  
     """
     assert mode in ["TIB","VIB"], "please enter mode of imbalance bar: TIB/VIB"
     if mode == "TIB":
@@ -299,11 +298,16 @@ def imbalance_bar(data,ET_window,P_window, warm_up_len = 100,mode="TIB"):
 
     if mode == "VIB":
         b_t = np.array(b_t * data["vol"])
-    t0 = max(np.nonzero(b_t)[0][0], warm_up_len)
-    bar = [t0]
+    E_T = warm_up_len
+    E_theta = E_T * 0.5 # without prior knowledge it's reasonable to assume P(b_t==1) = 0.5
+
+    # length of first bar
+    t0 = np.where(abs(np.cumsum(b_t))>=E_theta)[0]
+    if len(t0) == 0:
+        raise ValueError("No such bar can be created!")
+
+    bar = [t0[0]]
     bar_len = 0
-    E_T = _estimate_ET(bar, ET_window) # E_T warm up
-    E_theta = E_T[0] * _EMA(b_t[:t0],win=min(t0-1,P_window))[-1]
     while True:
         theta_t = abs(np.cumsum(b_t[sum(bar):]))
         increment = np.where(theta_t > E_theta)[0]# np.where() will return a tuple
@@ -315,8 +319,9 @@ def imbalance_bar(data,ET_window,P_window, warm_up_len = 100,mode="TIB"):
             break
         bar.append(increment[0]+1)# python start from 0 but we want to store the length of each bar
         bar_len += 1
-        E_T = _estimate_ET(bar, ET_window)
-        E_theta = E_T * abs(_estimate_P(b_t, bar, P_window))
+        E_T = _EMA(bar, ET_window)[-1]
+        P_estimate = _EMA(b_t[:sum(bar)], P_window)[-1]
+        E_theta = E_T * abs(P_estimate)
     result = _bar2df(bar,data)
     return result
 
