@@ -64,6 +64,7 @@ def main(root_path):
     meta_label_run["t1Fea"] = meta_label_run["t1Fea"] - 1
     meta_label_run["tLabel"] = meta_label_run["tLabel"] - 1
 
+    # doesn't use DataFrame.equals() because price return in python and R has different precision
     feature_start_diff = len(np.where((meta_label["feature_start"]-meta_label_run["t0Fea"])!=0)[0])
     feature_end_diff = len(np.where((meta_label["feature_end"]-meta_label_run["t1Fea"])!=0)[0])
     label_idx_diff = len(np.where((meta_label["label_point"]-meta_label_run["tLabel"])!=0)[0])
