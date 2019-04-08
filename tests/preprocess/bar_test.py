@@ -151,6 +151,8 @@ def main(root_path):
         res = check_TRB(args,test_data,root_path)
     elif args.bars == "VRB":
         res = check_VRB(args,test_data,root_path)
+    else:
+        raise ValueError("please specify bars type")
     if res:
         print("################################")
         print("#Awesome! your code is perfect!#")
