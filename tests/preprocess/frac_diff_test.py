@@ -19,6 +19,24 @@ def parser_args():
         help="when to stop for smallest weights")
     return parser.parse_args()
 
+def array_compare(arr1, arr2):
+    """
+    return True if each element in two vector are within thres
+    default thres is 1e-7
+    @parameters:
+        arr1--list or np.ndarray
+        arr1--list or np.ndarray
+    @returns:
+        True or False
+    """
+    if len(arr1)!= len(arr2):
+        return False
+    
+    thres =  1e-7
+    for i in range(len(arr1)):
+        if abs(arr1[i] - arr2[i]) > thres:
+            return False    
+    return True
 
 def main(root_path):
     args = parser_args()
@@ -43,8 +61,10 @@ def main(root_path):
     vec_N = vec_N[~np.isnan(vec_N)]
     vec_thres = vec_thres[~np.isnan(vec_thres)]
 
-    res_N = np.array_equal(diff_run_N,vec_N)
-    res_thres = np.array_equal(diff_run_thres,vec_thres)
+    # res_N = np.array_equal(diff_run_N,vec_N)
+    res_N = array_compare(diff_run_N, vec_N)
+    # res_thres = np.array_equal(diff_run_thres,vec_thres)
+    res_thres = array_compare(diff_run_thres, vec_thres)
 
     if not res_N:
         print("##########################################################")
