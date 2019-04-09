@@ -33,10 +33,13 @@ def array_compare(arr1, arr2):
         return False
     
     thres =  1e-7
-    for i in range(len(arr1)):
-        if abs(arr1[i] - arr2[i]) > thres:
-            return False    
-    return True
+    diff = abs(np.array(arr1) - np.array(arr2)) # arr1 and arr2 may not be np.ndarray
+    # if np.argmax() returns 0 when 
+    # 1. there is no element satisfy the conditions or
+    # 2. the first element satisfies the conditions
+    if np.argmax(diff>thres)==0 and diff[0] <= thres:
+        return True
+    return False
 
 def main(root_path):
     args = parser_args()
