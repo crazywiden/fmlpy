@@ -8,9 +8,16 @@ import numpy as np
 def frac_diff(price, d, thres=None, n_weight=None):
     '''
     This function is used to calculate fraction differenciation
-    :param d: total number to iterate
-    :param x: kind of some number
-    :return: some calculated result
+    @parameters
+    price -- vector
+    d -- scalar
+        generally between 0 and 1, as differentiate order
+    thres -- scalar
+        when weight less than thres stop
+    n_weight -- integer
+        how many weight factor we want
+    @return:
+    a fractionally differentiated vector with first n_weight element be np.nan
     '''
     if n_weight is not None:
         comb = _combine_weight(n_weight, d)
@@ -25,9 +32,8 @@ def frac_diff(price, d, thres=None, n_weight=None):
 
     df = df.T
     result = df.apply(func=_one_frac, comb_list=comb, axis=0).to_list()
-    res = price[:length-1].to_list()
-    res.extend(result)
-    return np.array(res)
+    res = np.repeat(np.nan,length-1)
+    return np.concatenate((res, result), axis=None)
 
 
 def _combine_weight(n_weight,d):
