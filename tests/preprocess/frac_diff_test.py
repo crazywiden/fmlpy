@@ -46,13 +46,12 @@ def main(root_path):
     test_data = pd.read_csv(os.path.join(root_path,"bar_test_data.csv"))
     price = test_data["Price"]
 
-    # the ideal return value of frac_diff.frac_diff() should be np.adarray
+    # the ideal return value of frac_diff() should be np.adarray
     diff_run_N = frac_diff(price, d = args.d, n_weight=args.N)
     diff_run_thres = frac_diff(price, d = args.d, thres=args.thres)
-    pd.DataFrame(diff_run_thres).to_csv("myrun_T.csv")
     #
-    # Rmd = "Rscript gen_frac_diff.R --d %f --N %d --thres %f" % (args.d, args.N, args.thres)
-    # subprocess.check_output(Rmd, universal_newlines=True)
+    Rmd = "Rscript gen_frac_diff.R --d %f --N %d --thres %f" % (args.d, args.N, args.thres)
+    subprocess.check_output(Rmd, universal_newlines=True)
 
     vec_N = pd.read_csv(os.path.join(root_path,"frac_diff_N.csv"))
     vec_N = vec_N["x"].values # transform dataframe to np.ndarray
@@ -65,9 +64,7 @@ def main(root_path):
     vec_N = vec_N[~np.isnan(vec_N)]
     vec_thres = vec_thres[~np.isnan(vec_thres)]
 
-    # res_N = np.array_equal(diff_run_N,vec_N)
     res_N = array_compare(diff_run_N, vec_N)
-    # res_thres = np.array_equal(diff_run_thres,vec_thres)
     res_thres = array_compare(diff_run_thres, vec_thres)
 
     if not res_N:
