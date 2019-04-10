@@ -6,7 +6,7 @@ setup(
     packages=find_packages(exclude=['tests*']),
     license='MIT',
     description='package for Financial Machine Learning',
-    long_description=open('README.txt').read(),
+    long_description=open('README.md').read(),
     install_requires=['numpy','pandas'],
     url='https://github.com/crazywiden/pyfml',
     author='My King&Yuan',

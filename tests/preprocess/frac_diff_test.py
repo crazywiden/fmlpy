@@ -47,11 +47,12 @@ def main(root_path):
     price = test_data["Price"]
 
     # the ideal return value of frac_diff.frac_diff() should be np.adarray
-    diff_run_N = frac_diff.frac_diff(price, d = args.d, n_weight=args.N)
-    diff_run_thres = frac_diff.frac_diff(price, d = args.d, thres=args.thres)
-
-    Rmd = "Rscript gen_frac_diff.R --d %f --N %d --thres %f" % (args.d, args.N, args.thres)
-    subprocess.check_output(Rmd, universal_newlines=True)
+    diff_run_N = frac_diff(price, d = args.d, n_weight=args.N)
+    diff_run_thres = frac_diff(price, d = args.d, thres=args.thres)
+    pd.DataFrame(diff_run_thres).to_csv("myrun_T.csv")
+    #
+    # Rmd = "Rscript gen_frac_diff.R --d %f --N %d --thres %f" % (args.d, args.N, args.thres)
+    # subprocess.check_output(Rmd, universal_newlines=True)
 
     vec_N = pd.read_csv(os.path.join(root_path,"frac_diff_N.csv"))
     vec_N = vec_N["x"].values # transform dataframe to np.ndarray
