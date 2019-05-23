@@ -50,25 +50,23 @@ def seq_bootstrap(occ_matrix, n_classifier=1, n_sample=None, verbose=True):
 	sample_idx -- m by n matrix
 		m is number of classifiers
 		n is number of samples
-	"""
-	# calculate overlap and pick with prob
+    """
+	result = []
 	for i in range(n_classifier):
-		# random choose the first one
 		first = np.random.randint(0, len(occ_matrix))
 		benchmark = occ_matrix[first]
-		sample_ind = [first]
-		sample_idx = []
+		sample = [first]
+
 		for j in range(n_sample):
-			min_overlap = 0
-			min_ind = 0
+			overlap_prob = []
+
 			for k in range(len(occ_matrix)):
-				overlap = np.sum([1/(1+a+b) for a, b in zip(occ_matrix[k], benchmark)])
-				if overlap < min_overlap:
-					min_overlap = overlap
-					min_ind = k
+				overlap = np.sum([1/(1+a+b) for a,b in zip(occ_matrix[k], benchmark)])
+				overlap_prob.append(overlap)
+			overlap_prob = overlap_prob / np.sum(overlap_prob)
+			choice = np.random.choice(range(len(occ_matrix)), prob=overlap_prob)
+			sample.append(choice)
+			benchmark += occ_matrix[benchmark]
 
-				benchmark += occ_matrix[min_ind]
-			sample_ind.append(min_ind)
-		sample_idx.append(sample_ind)
-	return sample_idx
-
+		result.append(sample)
+	return result
