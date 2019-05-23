@@ -51,6 +51,7 @@ def seq_bootstrap(occ_matrix, n_classifier=1, n_sample=None, verbose=True):
 		m is number of classifiers
 		n is number of samples
     """
+
 	result = []
 	for i in range(n_classifier):
 		first = np.random.randint(0, len(occ_matrix))
