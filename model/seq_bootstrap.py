@@ -1,6 +1,7 @@
 import pandas as pd 
 import numpy as np 
 
+
 def _occurance_matrix(label_start,label_end):
 	"""
 	generate a matrix shows which bar used info of data at which time
@@ -23,7 +24,13 @@ def _occurance_matrix(label_start,label_end):
 		m is number of bars (len(label_start))
 		n is maximum time length (max(label_end))
 	"""
-	pass
+	matrix = np.zeros(shape=(len(label_start), label_end[-1]))
+	i = 0
+	for s, e in zip(label_start, label_end):
+		matrix[i, s:e] = 1
+		i += 1
+	return matrix
+
 
 def seq_bootstrap(occ_matrix, n_classifier=1, n_sample=None, verbose=True):
 	"""
@@ -44,4 +51,24 @@ def seq_bootstrap(occ_matrix, n_classifier=1, n_sample=None, verbose=True):
 		m is number of classifiers
 		n is number of samples
 	"""
-	pass
+	# calculate overlap and pick with prob
+	for i in range(n_classifier):
+		# random choose the first one
+		first = np.random.randint(0, len(occ_matrix))
+		benchmark = occ_matrix[first]
+		sample_ind = [first]
+		sample_idx = []
+		for j in range(n_sample):
+			min_overlap = 0
+			min_ind = 0
+			for k in range(len(occ_matrix)):
+				overlap = np.sum([1/(1+a+b) for a, b in zip(occ_matrix[k], benchmark)])
+				if overlap < min_overlap:
+					min_overlap = overlap
+					min_ind = k
+
+				benchmark += occ_matrix[min_ind]
+			sample_ind.append(min_ind)
+		sample_idx.append(sample_ind)
+	return sample_idx
+
