@@ -1,4 +1,4 @@
-import pandas as pd 
+import time
 import numpy as np 
 
 
@@ -58,6 +58,7 @@ def seq_bootstrap(occ_matrix, n_classifier=1, n_sample=None, verbose=True):
 		benchmark = occ_matrix[first]
 		sample = [first]
 
+		start_time = time.time()
 		for j in range(n_sample):
 			overlap_prob = []
 
@@ -70,4 +71,6 @@ def seq_bootstrap(occ_matrix, n_classifier=1, n_sample=None, verbose=True):
 			benchmark += occ_matrix[benchmark]
 
 		result.append(sample)
+		if verbose:
+			print('Round {}/{}: time elapsed -- {}'.format(i, n_classifier, time.time()-start_time))
 	return result
