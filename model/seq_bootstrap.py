@@ -59,15 +59,14 @@ def seq_bootstrap(occ_matrix, n_classifier=1, n_sample=None, verbose=True):
 
 		start_time = time.time()
 		for j in range(n_sample):
-			overlap_prob = []
+			add_one = 1+benchmark
+			overlap = occ_matrix / add_one
+			overlap = np.sum(overlap, axis=1)
+			overlap_prob = overlap / np.sum(overlap)
 
-			for k in range(len(occ_matrix)):
-				overlap = np.sum([1/(1+a+b) for a,b in zip(occ_matrix[k], benchmark)])
-				overlap_prob.append(overlap)
-			overlap_prob = overlap_prob / np.sum(overlap_prob)
 			choice = np.random.choice(range(len(occ_matrix)), prob=overlap_prob)
 			sample.append(choice)
-			benchmark += occ_matrix[benchmark]
+			benchmark += occ_matrix[choice]
 
 		result.append(sample)
 		if verbose:
