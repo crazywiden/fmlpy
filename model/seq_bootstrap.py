@@ -59,8 +59,7 @@ def seq_bootstrap(occ_matrix, n_classifier=1, n_sample=None, verbose=True):
 
 		start_time = time.time()
 		for j in range(n_sample):
-			add_one = 1+benchmark
-			overlap = occ_matrix / add_one
+			overlap = occ_matrix / (1+benchmark)
 			overlap = np.sum(overlap, axis=1)
 			overlap_prob = overlap / np.sum(overlap)
 
