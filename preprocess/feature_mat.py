@@ -1,5 +1,7 @@
 import pandas as pd 
 import numpy as np 
+import filters
+import os
 
 def _check_event_format(events):
     if not isinstance(events, pd.DataFrame):
@@ -178,13 +180,14 @@ def add_features(feature_mat, features, feature_name=None, func=None):
         new_feature = features[feature_mat["feature_end"]]
 
     else:
-        new_feature = [func(features,start,end) for start, end in zip(feature_mat["feature_start"], feature_mat["feature_end"])]
+        new_feature = [func(start,end) for start, end in zip(feature_mat["feature_start"], feature_mat["feature_end"])]
 
     if not feature_name:
-        feature_name = "feature_" + (feature_mat.shape[1]-5)
+        feature_name = "feature_" + str(feature_mat.shape[1]-5)
 
     feature_mat[feature_name] = new_feature
 
     # fill NA with previous value
     feature_mat.fillna(method="ffill")
     return feature_mat
+
