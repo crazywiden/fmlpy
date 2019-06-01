@@ -52,3 +52,11 @@ def purged_cross_validation(X,y, n_splits, embargo_pct=0, shuffle=False, random_
     CV = purgedCV(n_splits, embargo_pct, shuffle, random_seed)
     return [(train, test) for train, test in CV.split(X,y)]
 
+<<<<<<< HEAD
+=======
+if __name__ == '__main__':
+    CV = purgedCV(n_splits=10)
+    X = np.arange(100)
+    y = np.arange(100)
+    print(purged_cross_validation(X,y,n_splits=100))
+>>>>>>> 5ed43473297ec1df2af86ede75af746e334331b0
