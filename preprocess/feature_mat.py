@@ -1,6 +1,6 @@
 import pandas as pd 
-import numpy as np 
-import filters
+import numpy as np
+from . import filters
 import os
 
 def _check_event_format(events):
