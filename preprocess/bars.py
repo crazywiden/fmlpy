@@ -12,17 +12,19 @@ def _bar2df(bars,data):
         each element in bars represent the length of that bar
     @returns:
     res -- dataframe
-        dataframe (start, stop, high, low, close, open)
+        dataframe (start_t, end_t, start_idx, end_idx, high, low, close, open)
     """
     tmp = list(map(lambda x: [x[0] for _ in range(x[1])],list(enumerate(bars))))
-    labels = list(itertools.chain(*tmp))
+    labels = list(itertools.chain(*tmp)) # tmp is a list of list and this line flattens it
     data["labels"] = labels
+    data["index"] = list(range(data.shape[0]))
     aggregation_condition = {'time': ['first', 'last'], \
+                             'index':['first', 'last'], \
                              'price': ['min', 'max', 'first', 'last']}
     res = data.groupby("labels",as_index=False).agg(aggregation_condition)
     res.columns = ['_'.join(col) for col in res.columns.values]
     res = res.drop(["labels_"],axis=1)
-    res.columns = ['start', 'stop', 'low', 'high', 'open', 'close']
+    res.columns = ['start_t', 'end_t', 'start_idx', 'end_idx','low', 'high', 'open', 'close']
     return res
 
 
@@ -155,21 +157,25 @@ def time_bar(data, time_window):
             U         microseconds
             N, us     nanoseconds
     @return:
-        dataframe (start, stop, high, low, close, open)
+        dataframe (start_t, end_t, start_idx, end_idx, high, low, close, open)
     '''
     data = _preprocess(data)
-    data = data.assign(time= pd.to_datetime(data['time']))
+    data = data.assign(time= pd.to_datetime(data['time']), idx=list(range(data.shape[0])))
     data = data.resample(time_window, on='time')
     aggregated_data = data.agg(['min', 'max', 'first', 'last'])
     times = aggregated_data['time']
-    times.columns = ['min', 'max', 'start', 'stop']
-    times = times[['start', 'stop']]
+    index = aggregated_data['idx']
+    times.columns = ['min', 'max', 'start_t', 'end_t']
+    index.columns = ['min', 'max', 'start_idx', 'end_idx']
+    times = times[['start_t', 'end_t']]
+    index = index[['start_idx', 'end_idx']]
     price = aggregated_data['price']
     price.columns = ['low', 'high', 'open', 'close']
-    result = pd.concat([times, price], axis=1, sort=False)
+    result = pd.concat([times, index, price], axis=1, sort=False)
     result = result.reset_index()
     result = result.drop(['time'], axis=1)
     result = result.dropna()
+    result = result.astype({'start_idx':'int64','end_idx':'int64'})
     return result
 
 def volume_bar(data, size):
@@ -181,7 +187,7 @@ def volume_bar(data, size):
         data: input data with time, price and volume
         size: input volume bar, integer
     @return:
-        dataframe (start, stop, high, low, close, open)
+        dataframe (start_t, end_t, start_idx, end_idx, high, low, close, open)
     '''
     data = _preprocess(data, True)
     if not isinstance(size, int):
@@ -189,9 +195,12 @@ def volume_bar(data, size):
     data.loc[:, 'vol'] = pd.to_numeric(data['vol'])
     data.loc[:, 'cumsum'] = data['vol'].cumsum()
     data['cumsum'] = data['cumsum'] // size
-    aggregated_data = data.groupby('cumsum').agg({'time': ['first', 'last'], 'price': ['min', 'max', 'first', 'last']})
+    data = data.assign(idx=list(range(data.shape[0])))
+    data['idx'] = data['idx'].astype('int64')
+    aggregated_data = data.groupby('cumsum').agg({'time': ['first', 'last'], 'idx': ['first', 'last'], 
+        'price': ['min', 'max', 'first', 'last']})
     aggregated_data.columns = [' '.join(col).strip() for col in aggregated_data.columns.values]
-    aggregated_data.columns = ['start', 'stop', 'low', 'high', 'open', 'close']
+    aggregated_data.columns = ['start_t', 'end_t', 'start_idx', 'end_idx','low', 'high', 'open', 'close']
     result = aggregated_data.reset_index()
     result = result.drop(['cumsum'], axis=1)
     result = result.dropna()
@@ -206,7 +215,7 @@ def dollar_bar(data, bar):
         data: input data with time, price and volume
         bar: input dollar bar, integer
     @return:
-        dataframe (start, stop, high, low, close, open)
+        dataframe (start_t, end_t, start_idx, end_idx, high, low, close, open)
     '''
     data = _preprocess(data, True)
     if not isinstance(bar, int):
@@ -215,9 +224,12 @@ def dollar_bar(data, bar):
     data['dollar'] = data['price'] * data['vol']
     data.loc[:, 'cumsum'] = data['dollar'].cumsum()
     data['cumsum'] = data['cumsum'] // bar
-    aggregated_data = data.groupby('cumsum').agg({'time': ['first', 'last'], 'price': ['min', 'max', 'first', 'last']})
+    data = data.assign(idx=list(range(data.shape[0])))
+    data['idx'] = data['idx'].astype('int64')
+    aggregated_data = data.groupby('cumsum').agg({'time': ['first', 'last'], 'idx': ['first', 'last'],
+        'price': ['min', 'max', 'first', 'last']})
     aggregated_data.columns = [' '.join(col).strip() for col in aggregated_data.columns.values]
-    aggregated_data.columns = ['start', 'stop', 'low', 'high', 'open', 'close']
+    aggregated_data.columns = ['start_t', 'end_t', 'start_idx', 'end_idx','low', 'high', 'open', 'close']
     result = aggregated_data.reset_index()
     result = result.drop(['cumsum'], axis=1)
     result = result.dropna()
@@ -239,7 +251,7 @@ def imbalance_bar(data,ET_window,P_window, warm_up_len = 100,mode="TIB"):
         mode -- string
             can only be "TIB"(tick imbalance bar) or "VIB"(volume imbalance bar)
     @returns:
-        dataframe (start, stop, high, low, close, open)  
+        dataframe (start_t, end_t, start_idx, end_idx, high, low, close, open)
     """
     assert mode in ["TIB","VIB"], "please enter mode of imbalance bar: TIB/VIB"
     if mode == "TIB":
@@ -299,7 +311,7 @@ def tick_run_bar(data, ET_window, bt1_window, warm_up_len=100):
             how many data should we use to warm up
             default is 100
     @returns:
-        dataframe (start, stop, high, low, close, open)
+        dataframe (start_t, end_t, start_idx, end_idx, high, low, close, open)
     """
     data = _preprocess(data)
     b_t = _direction(data["price"])
@@ -359,7 +371,7 @@ def vol_run_bar(data,ET_window,bt1_window,pos_vol_window,neg_vol_window,warm_up_
             how many data should we use to warm up
             default is 100
     @returns:
-        dataframe (start, stop, high, low, close, open)
+        dataframe (start_t, end_t, start_idx, end_idx, high, low, close, open)
     """
     data = _preprocess(data, need_vol=True)
     b_t = _direction(data["price"])
