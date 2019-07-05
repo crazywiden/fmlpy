@@ -1,6 +1,3 @@
-"""
-this script is used to calculate fractionally differentiated 
-"""
 import pandas as pd
 import numpy as np
 
@@ -73,9 +70,3 @@ def _combine_threshold(d, threshold):
 def _one_frac(x, comb_list):
     answer = [a * b for a, b in zip(x[::-1], comb_list)]
     return np.sum(answer)
-
-
-if __name__ == '__main__':
-    price = [100, 200, 300, 400, 500]
-    a = frac_diff(price, 0.5, thres=0.001)
-    print(a)
