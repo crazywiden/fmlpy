@@ -1,8 +1,3 @@
-"""
-implemented feature bars such as CUMSUM filter etc.
-used to filter structured bars(imbalance bars/run bars etc.)
-but whether to filter is optional 
-"""
 import pandas as pd 
 import numpy as np 
 
@@ -16,7 +11,7 @@ def CUMSUM_filter(price, thres):
     @parameters:
     price -- 1d vector(list or np.ndarray)
     thres -- integer or vector
-        thres is a vector means we allow different threshold at different stages
+        thres is a vector means different threshold at different stages is allowed
     @returns:
     CUMSUM_idx -- 1d vector
         each element is the starting index of each bar
@@ -33,10 +28,5 @@ def CUMSUM_filter(price, thres):
             
     return np.array(CUMSUM_idx)
 
-if __name__ == '__main__':
-    test_data = pd.read_csv(r"D:\fmlpy\tests\bar_test_data.csv")
-    price = test_data["Price"]
-    a = CUMSUM_filter(price,thres=3000)
-    print(a)
 
 
