@@ -6,7 +6,7 @@ import os
 def _check_event_format(events):
     if not isinstance(events, pd.DataFrame):
         return False
-    if not set(events.columns.values).issubset(["start_t","end_t","target_rtn","side"]):
+    if not set(events.columns.values).issubset(["start_idx","end_idx","target_rtn","side"]):
         return False
     return True
 
@@ -42,7 +42,7 @@ def _get_label(price_seg, barrier, side, inclu_vertical):
 
     # initially, assign -2 to label to indicate price hit vertical barrier
     # if inclu_vertical == True, we turn label==-2 to label==0
-    # in other case, bar with label == -2 will be excluded
+    # otherwise, bar with label == -2 will be excluded
     if side == 0: # consider both upper barrier and lower barrier
         if upper_hit == 0 and lower_hit == 0: # doesn't hit upper barrier nor lower barrier
             rtn = rtn_vec[-1]
@@ -99,8 +99,8 @@ def meta_label(price, events, profit_take, stop_loss, inclu_vertical=False):
     @parameters:
     prices-- 1d vector
     events--dataframe
-        start_t: start time of each bar
-        end_t: end time of each bar
+        start_idx: start time index of each bar
+        end_idx: end time index of each bar
         target_rtn: threshold return of upper and lower bar
         side: side[i] == 0 means take both upper barrier and lower barrier
               side[i] == 1 means take only upper barrier
@@ -124,8 +124,8 @@ def meta_label(price, events, profit_take, stop_loss, inclu_vertical=False):
         raise ValueError("events should be a dataframe with columns: start_t/end_t/target_rtn/side")
 
     N_bar = events.shape[0]
-    label_start = events["start_t"].values
-    label_end = np.minimum(events["end_t"].values, len(price)-1)
+    label_start = events["start_idx"].values
+    label_end = np.minimum(events["end_idx"].values, len(price)-1)
     target_rtn = events["target_rtn"].values
     side = events["side"].values
     label_point = np.zeros(N_bar,dtype=int)
@@ -133,7 +133,7 @@ def meta_label(price, events, profit_take, stop_loss, inclu_vertical=False):
     rtn = np.zeros(N_bar)
     for i in range(N_bar):
         barrier = [profit_take*target_rtn[i], -stop_loss*target_rtn[i]]
-        rtn[i], label[i], tmp_point = _get_label(price[label_start[i]:(label_end[i]+1)],\
+        rtn[i], label[i], tmp_point = _get_label(price[label_start[i]:(label_end[i]+1)].values,\
                                                  barrier, side[i], inclu_vertical)
         label_point[i] = label_start[i] + tmp_point
 
@@ -180,10 +180,10 @@ def add_features(feature_mat, features, feature_name=None, func=None):
         new_feature = features[feature_mat["feature_end"]]
 
     else:
-        new_feature = [func(start,end) for start, end in zip(feature_mat["feature_start"], feature_mat["feature_end"])]
+        new_feature = [func(features[start],features[end]) for start, end in zip(feature_mat["feature_start"], feature_mat["feature_end"])]
 
     if not feature_name:
-        feature_name = "feature_" + str(feature_mat.shape[1]-5)
+        feature_name = "feature" + str(feature_mat.shape[1]-5)
 
     feature_mat[feature_name] = new_feature
 
