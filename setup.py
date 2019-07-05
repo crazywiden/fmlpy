@@ -12,6 +12,10 @@ setup(
     author='Xiuyu&Yuan',
     author_email='yuangao719@gmail.com',
     keywords = ['Machine Learning', 'Financial'], 
-
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ]
 )
 
