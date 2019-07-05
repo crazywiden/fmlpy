@@ -9,6 +9,9 @@ setup(
     long_description=open('README.md').read(),
     install_requires=['numpy','pandas'],
     url='https://github.com/crazywiden/pyfml',
-    author='My King&Yuan',
-    author_email='yuangao719@gmail.com'
+    author='Xiuyu&Yuan',
+    author_email='yuangao719@gmail.com',
+    keywords = ['Machine Learning', 'Financial'], 
+
 )
+
