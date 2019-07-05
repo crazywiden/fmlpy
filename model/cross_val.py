@@ -48,15 +48,30 @@ class purgedCV:
             yield train_indices,test_indices
 
 
-def purged_cross_validation(X,y, n_splits, embargo_pct=0, shuffle=False, random_seed=42):
+def purged_cross_validation(n_splits, X, y=None,embargo_pct=0, shuffle=False, random_seed=42):
+    """
+    @parameters:
+    n_splits -- int
+        how many round do you want to do cross validation
+        X -- dataframe
+            feature matrix of feature part, but can also be the whole feature matrix
+        y -- 1d ndarray
+            length should be n_samples
+        embargo_pct -- float
+            should be within 0 to 1
+            means T*embargo_pct training observations are deleted for any train data after test data
+            usually should be 0.01 or so
+        shuffle -- binary
+            whether to shuffle the data when do cross validation
+        random_seed -- int
+    @returns:
+    a list of tuples with length of n_splits
+    each tuple has two elements:
+        1st element is an np.ndarray indicates the train data indices for that round
+        2nd element is an np.ndarray indicates the test data indices for that round
+    """
+    assert embargo_pct<1 and embargo_pct > 0, "embargo factor should be within (0, 1)"
     CV = purgedCV(n_splits, embargo_pct, shuffle, random_seed)
     return [(train, test) for train, test in CV.split(X,y)]
 
-<<<<<<< HEAD
-=======
-if __name__ == '__main__':
-    CV = purgedCV(n_splits=10)
-    X = np.arange(100)
-    y = np.arange(100)
-    print(purged_cross_validation(X,y,n_splits=100))
->>>>>>> 5ed43473297ec1df2af86ede75af746e334331b0
+
