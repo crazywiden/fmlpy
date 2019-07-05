@@ -1,3 +1,3 @@
-from . import seq_bootstrap
-from . import cross_val
+from .seq_bootstrap import *
+from .cross_val import *
 
