@@ -2,7 +2,7 @@ import sys
 import os
 from os.path import dirname
 sys.path.append(dirname(dirname(dirname(os.getcwd()))))
-from fmlpy.preprocess import frac_diff
+from fmlpy.preprocess.frac_diff import frac_diff
 import subprocess
 import argparse
 import pandas as pd

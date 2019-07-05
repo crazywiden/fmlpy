@@ -76,7 +76,7 @@ if(opt$bars == "time_bar"){
                              bkw_T=opt$ET_window, bkw_Pb1=opt$bt1_window,
                              bkw_V=opt$pos_vol_window)
   VRB <- do.call(cbind.data.frame,VRB)
-  write.csv(VRB,file = paste(root_path,"TRB.csv",sep = "/"))
+  write.csv(VRB,file = paste(root_path,"VRB.csv",sep = "/"))
 }else{
   stop("wrong bars type")
 }

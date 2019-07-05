@@ -123,11 +123,11 @@ def check_VRB(args,test_data,root_path):
     bt1_win = args.bt1_window
     pos_vol_win = args.pos_vol_window
     neg_vol_win = args.neg_vol_window
-    warm_len = args.warm_up_len
+    warm_up_len = args.warm_up_len
     TRB = bars.vol_run_bar(test_data,ET_win,bt1_win,pos_vol_win,neg_vol_win,warm_up_len)
     TRB.to_csv(os.path.join(root_path,"VRB_run.csv"))
-    R_cmd = "Rscript gen_bars.R --bars VRB --ET_window %d --bt1_window %d " + \
-            "--pos_vol_window %d -- neg_vol_window %d --warm_up_len %d" % \
+    R_cmd = ("Rscript gen_bars.R --bars VRB --ET_window %d --bt1_window %d " + \
+            "--pos_vol_window %d --neg_vol_window %d --warm_up_len %d") % \
             (ET_win,bt1_win,pos_vol_win,neg_vol_win,warm_up_len)
     subprocess.check_output(R_cmd, universal_newlines=True)
     res = bar_compare(os.path.join(root_path,"VRB_run.csv"),\
@@ -150,7 +150,10 @@ def main(root_path):
     elif args.bars == "TRB":
         res = check_TRB(args,test_data,root_path)
     elif args.bars == "VRB":
-        res = check_VRB(args,test_data,root_path)
+        # res = check_VRB(args,test_data,root_path)
+        print("For Volume Run Bars,")
+        print("this package use different initialization method as fmlr package")
+        return 0
     else:
         raise ValueError("please specify bars type")
     if res:
