@@ -33,7 +33,11 @@ This package included four modules listed below
 
 
 ## Installation
-This package is under developement. Will be provided once we are ready.
+Use 
+```python 
+pip install fmlpy
+```
+to install
 
 ## Examples
 See [this pipeline](https://github.com/crazywiden/fmlpy/blob/master/tests/pipeline_example.py) for how to use most of the functions in this packagge.
