@@ -1,7 +1,7 @@
 # fmlpy
 Welcome to Financial Machine Learning in Python! 
 
-This package is used to apply machine learning methods to financial data, which generally has very low SNR(signal to noise ratio) and thus hard to apply ML directly. You can find more detailed explaination of methods implemented in this package in [Advances in Financial Machine Learning](https://drive.google.com/file/d/1XUr7phuMCQxBKyqFxeVcL2sOCRe5dq7Z/view?usp=sharing). Also you can find R version of this package at [fmlr](https://github.com/larryleihua/fmlr). 
+This package is used to apply machine learning methods to financial data, which generally has very low SNR(signal to noise ratio) and thus hard to apply ML directly. You can find more detailed explaination of methods implemented in this package in *Advances in Financial Machine Learning*. Also you can find R version of this package at [fmlr](https://github.com/larryleihua/fmlr). 
 
 ## What is this package doing?
 There are mainly three obstacles people may encouter when they are trying to apply machine learning on financial data:
