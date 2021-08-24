@@ -15,10 +15,10 @@ test_data = pd.read_csv(os.path.join(root_path,"bar_test_data.csv"))
 ############################################################
 # multiple ways are provided to generate bars
 T_win = "10s" 
-t_bars = fpre.time_bar(test_data,time_window=T_win)
+t_bars = fpre.bars.time_bar(test_data,time_window=T_win)
 
 # Size = 100000
-# vol_bars = bars.volume_bar(test_data,size=Size)
+# vol_bars = fpre.bars.volume_bar(test_data,size=Size)
 
 
 # Size = 100000
