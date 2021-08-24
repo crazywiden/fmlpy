@@ -42,8 +42,3 @@ to install
 ## Examples
 See [this pipeline](https://github.com/crazywiden/fmlpy/blob/master/tests/pipeline_example.py) for how to use most of the functions in this packagge.
 
-## Contribute
-Salute to My King!!
-
-![](https://drive.google.com/uc?export=view&id=1XjO7_k6Qo0BwICw8TsAo72vFDqrKKTZh)  
-Also thanks to anyone who can help!! Please read our [Contributing Guidelines](https://github.com/crazywiden/pyfml/blob/master/CONTRIBUTING.md) before contributing.
